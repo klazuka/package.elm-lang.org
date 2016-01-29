@@ -1,6 +1,6 @@
 module Overview.Slider
   ( Model
-  , Action
+  , Action(MoveTo)
   , init
   , update
   , view
@@ -70,6 +70,7 @@ type Action
     | DragAt Int
     | DragEnd
     | Tick Time
+    | MoveTo Float
 
 
 update : Prox.ProximityTree a -> Action -> Model -> ( Model, Fx.Effects Action, Maybe a )
@@ -109,6 +110,17 @@ update proxTree action model =
       in
         ( Model fraction Nothing (Start targetFraction)
         , Fx.tick Tick
+        , Just targetValue
+        )
+
+    MoveTo fraction ->
+      let
+        (targetFraction, targetValue) =
+          Prox.nearest fraction proxTree
+            |> Debug.log "slider nearest"
+      in
+        ( Model targetFraction Nothing None
+        , Fx.none
         , Just targetValue
         )
 

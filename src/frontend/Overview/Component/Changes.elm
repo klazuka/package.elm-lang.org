@@ -145,6 +145,7 @@ type Action
     | UpdateSlider2 Slider.Action
     | DocsFailed Vsn.Version
     | DocsLoaded Vsn.Version (Docs.Package Type.Type)
+    | AdvanceToNextVersion
 
 
 update : Ctx.OverviewContext -> Action -> Model -> ( Model, Fx.Effects Action )
@@ -182,6 +183,28 @@ update context action model =
     DocsLoaded vsn vsnDocs ->
       ( { model | docs = Dict.insert vsn (Ready vsnDocs) model.docs }
       , Fx.none
+      )
+
+    AdvanceToNextVersion ->
+      let
+        (currentFraction, currentVersion) =
+          sliderInfo model.versions model.slider2
+
+        (nextFraction, nextVersion) =
+          Prox.toList model.versions
+            |> List.filter (\(f,_) -> f > currentFraction)
+            |> List.head
+            |> Debug.log "advance to next"
+            |> Maybe.withDefault (currentFraction, currentVersion)
+
+        (newSlider, fx, maybeTarget) =
+          Slider.update model.versions (Slider.MoveTo nextFraction) model.slider2
+
+        (newDocs, maybeRequest) =
+          maybeLoadDocs context model.docs maybeTarget
+      in
+      ( { model | slider2 = newSlider, docs = newDocs }
+      , Fx.batch [ Fx.map UpdateSlider2 fx, maybeRequest ]
       )
 
 
@@ -264,6 +287,8 @@ view address {history, versions, slider1, slider2, docs} =
           [ viewSlider UpdateSlider1 fraction1 version1 "#7FD13B"
           , viewSlider UpdateSlider2 fraction2 version2 "#60B5CC"
           ]
+      , button [ onClick address AdvanceToNextVersion ]
+          [ text "ADVANCE!" ]
       , div [ class "diff" ]
           [ diffHeader fraction1 fraction2 version1 version2
           , lazy3 coarseDiff history version1 version2
