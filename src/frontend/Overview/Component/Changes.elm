@@ -190,6 +190,9 @@ update context action model =
         (currentFraction, currentVersion) =
           sliderInfo model.versions model.slider2
 
+        (newSlider1, fx1, _) =
+          Slider.update model.versions (Slider.MoveTo currentFraction) model.slider1
+
         (nextFraction, nextVersion) =
           Prox.toList model.versions
             |> List.filter (\(f,_) -> f > currentFraction)
@@ -197,14 +200,21 @@ update context action model =
             |> Debug.log "advance to next"
             |> Maybe.withDefault (currentFraction, currentVersion)
 
-        (newSlider, fx, maybeTarget) =
+        (newSlider2, fx2, maybeTarget) =
           Slider.update model.versions (Slider.MoveTo nextFraction) model.slider2
 
         (newDocs, maybeRequest) =
           maybeLoadDocs context model.docs maybeTarget
       in
-      ( { model | slider2 = newSlider, docs = newDocs }
-      , Fx.batch [ Fx.map UpdateSlider2 fx, maybeRequest ]
+      ( { model |
+            slider1 = newSlider1,
+            slider2 = newSlider2,
+            docs = newDocs
+        }
+      , Fx.batch
+          [ Fx.map UpdateSlider1 fx1
+          , Fx.map UpdateSlider2 fx2
+          , maybeRequest ]
       )
 
 

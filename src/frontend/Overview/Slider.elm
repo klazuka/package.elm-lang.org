@@ -114,15 +114,23 @@ update proxTree action model =
         )
 
     MoveTo fraction ->
-      let
-        (targetFraction, targetValue) =
-          Prox.nearest fraction proxTree
-            |> Debug.log "slider nearest"
-      in
-        ( Model targetFraction Nothing None
-        , Fx.none
-        , Just targetValue
-        )
+      case model.animation of
+        None ->
+          let
+            (targetFraction, targetValue) =
+              Prox.nearest fraction proxTree
+                |> Debug.log "slider nearest"
+          in
+            ( Model model.fraction Nothing (Start targetFraction)
+            , Fx.tick Tick
+            , Just targetValue
+            )
+
+        Start _ ->
+          (model, Fx.none, Nothing)
+
+        Running _ ->
+          (model, Fx.none, Nothing)
 
     Tick clockTime ->
       case model.animation of
