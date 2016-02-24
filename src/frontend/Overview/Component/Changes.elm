@@ -7,6 +7,7 @@ module Overview.Component.Changes
   )
   where
 
+import Date
 import Dict
 import Effects as Fx
 import Html exposing (..)
@@ -15,6 +16,7 @@ import Html.Events exposing (..)
 import Html.Lazy exposing (lazy3)
 import Json.Decode as Decode
 import StartApp
+import String
 import Task
 
 import Docs.Entry as Entry
@@ -27,6 +29,7 @@ import Overview.History as History
 import Overview.Slider as Slider
 import Page.Context as Ctx
 import Parse.Type as Type
+import Utils.Date exposing (toISODateString)
 import Utils.Path exposing ((</>))
 
 
@@ -98,38 +101,46 @@ loadDocs context version =
 view : Signal.Address Action -> Model -> Html
 view address {history, docs} =
   let
-    diffView version1 version2 =
+    diffView h1 h2 =
       div []
-          [ diffHeader version1 version2
-          , lazy3 coarseDiff history version1 version2
-          , lazy3 detailedDiff docs version1 version2
+          [ diffHeader h2.version (Date.fromTime (toFloat h2.date))
+          , lazy3 coarseDiff history h1.version h2.version
+          , lazy3 detailedDiff docs h1.version h2.version
           ]
-    vs =
-      List.map .version history
-
-    v2s =
-      List.drop 1 vs
   in
     div []
-      (List.map2 diffView v2s vs)
+      (List.map2 diffView (List.drop 1 history) history)
 
 
-diffHeader : Vsn.Version -> Vsn.Version -> Html
-diffHeader version1 version2 =
+diffHeader : Vsn.Version -> Date.Date -> Html
+diffHeader version releaseDate =
   h1 []
-     [ text (Vsn.vsnToString version1) ]
+     [ (vsnText version)
+     , text " | "
+     , (releaseDateText releaseDate)
+     ]
 
 
-vsnText : String -> Vsn.Version -> Html
-vsnText color vsn =
+vsnText : Vsn.Version -> Html
+vsnText vsn =
   span
     [ style
-        [ "border-bottom" => ("4px solid " ++ color)
+        [ "color" => "gray"
         ]
     ]
     [ text (Vsn.vsnToString vsn)
     ]
 
+
+releaseDateText : Date.Date -> Html
+releaseDateText releaseDate =
+  span
+    [ style
+        [ "color" => "orange"
+        ]
+    ]
+    [ text (toISODateString releaseDate)
+    ]
 
 -- VIEW DIFFS
 
